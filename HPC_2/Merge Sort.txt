@@ -1,0 +1,92 @@
+#include <iostream>
+#include <vector>
+#include <omp.h>
+
+// Function to merge two sorted sub-arrays into one sorted array
+void merge(std::vector<int>& arr, int l, int m, int r) {
+    int n1 = m - l + 1;
+    int n2 = r - m;
+
+    // Create temporary arrays
+    std::vector<int> L(n1);
+    std::vector<int> R(n2);
+
+    // Copy data to temporary arrays L[] and R[]
+    for (int i = 0; i < n1; i++)
+        L[i] = arr[l + i];
+    for (int j = 0; j < n2; j++)
+        R[j] = arr[m + 1 + j];
+
+    // Merge the temporary arrays back into arr[l..r]
+    int i = 0; // Initial index of first sub-array
+    int j = 0; // Initial index of second sub-array
+    int k = l; // Initial index of merged sub-array
+
+    while (i < n1 && j < n2) {
+        if (L[i] <= R[j]) {
+            arr[k] = L[i];
+            i++;
+        } else {
+            arr[k] = R[j];
+            j++;
+        }
+        k++;
+    }
+
+    // Copy the remaining elements of L[], if there are any
+    while (i < n1) {
+        arr[k] = L[i];
+        i++;
+        k++;
+    }
+
+    // Copy the remaining elements of R[], if there are any
+    while (j < n2) {
+        arr[k] = R[j];
+        j++;
+        k++;
+    }
+}
+
+// Parallel merge sort function
+void mergeSortParallel(std::vector<int>& arr, int l, int r) {
+    if (l < r) {
+        int m = l + (r - l) / 2;
+
+        // Parallelize sorting of left and right halves
+#pragma omp parallel sections
+        {
+#pragma omp section
+            mergeSortParallel(arr, l, m);
+#pragma omp section
+            mergeSortParallel(arr, m + 1, r);
+        }
+
+        // Merge the sorted halves
+        merge(arr, l, m, r);
+    }
+}
+
+// Utility function to print an array
+void printArray(const std::vector<int>& arr) {
+    for (int i = 0; i < arr.size(); i++) {
+        std::cout << arr[i] << " ";
+    }
+    std::cout << std::endl;
+}
+
+int main() {
+    std::vector<int> arr = {12, 11, 13, 5, 6, 7};
+    int n = arr.size();
+
+    std::cout << "Original array: ";
+    printArray(arr);
+
+    // Perform parallel merge sort
+    mergeSortParallel(arr, 0, n - 1);
+
+    std::cout << "Sorted array: ";
+    printArray(arr);
+
+    return 0;
+}
